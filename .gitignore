@@ -33,7 +33,8 @@
 
 #IDE files
 .vs/*
-Debug/*
-XRenderer/Debug/*
-XRenderer/SoftwareRenderer/Build/*
+Debug
 *.xcodeproj
+SoftwareRenderer/SoftwareRenderer.vcxproj
+SoftwareRenderer/SoftwareRenderer.vcxproj.filters
+SoftwareRenderer/SoftwareRenderer.vcxproj.user
