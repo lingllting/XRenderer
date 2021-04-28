@@ -5,7 +5,7 @@ const TGAColor red   = TGAColor(255, 0,   0,   255);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
 {
-    for (float t = 0; t < 1; t += 0.1)
+    for (float t = 0; t < 1; t += 0.01)
     {
         int x = x0*(1.-t) + x1*t;
         int y = y0*(1.-t) + y1*t;
