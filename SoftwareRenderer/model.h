@@ -2,9 +2,10 @@
 #define __MODEL_H__
 
 #include <vector>
-#include "geometry.h"
+#include "Geometry.h"
 
-class Model {
+class Model 
+{
 private:
 	std::vector<Vec3f> verts_;
 	std::vector<std::vector<int> > faces_;
