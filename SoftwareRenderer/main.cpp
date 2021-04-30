@@ -175,9 +175,17 @@ int main(int argc, char** argv)
     Vec2i a[3] = {Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80)};
     Vec2i b[3] = {Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180)};
     Vec2i c[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
-    graphics.DrawTriangle(a[0], a[1], a[2]);
-    graphics.DrawTriangle(b[0], b[1], b[2]);
-    graphics.DrawTriangle(c[0], c[1], c[2]);
+    
+    
+    // line sweeping
+    // graphics.DrawTriangle(a[0], a[1], a[2]);
+    // graphics.DrawTriangle(b[0], b[1], b[2]);
+    // graphics.DrawTriangle(c[0], c[1], c[2]);
+    
+    //AABB
+    graphics.DrawTriangle(a);
+    graphics.DrawTriangle(b);
+    graphics.DrawTriangle(c);
     graphics.End();
 	return 0;
 }

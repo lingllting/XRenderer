@@ -2,7 +2,7 @@
 
 Graphics::Graphics()
 {
-    _image = new TGAImage(500, 500, TGAImage::RGB);
+    _image = new TGAImage(300, 300, TGAImage::RGB);
 }
 Graphics::~Graphics()
 {
@@ -53,6 +53,7 @@ void Graphics::DrawLine(Vec2i a, Vec2i b, TGAColor color)
 	}
 }
 
+// Rasterize triangle based on line sweeping.
 void Graphics::DrawTriangle(Vec2i a, Vec2i b, Vec2i c)
 {
     // sort the vertices bottom-to-top in ascending order by their y-coordinate.
@@ -101,6 +102,29 @@ void Graphics::DrawTriangle(Vec2i a, Vec2i b, Vec2i c)
         for (int x = A; x <= B; x++)
         {
             _image->set(x, y, white);
+        }
+    }
+}
+
+void Graphics::DrawTriangle(Vec2i* vertices)
+{
+    // create AABB of the triangle
+    AABB aabb;
+    aabb.min.x = std::max(0, std::min(vertices[0].x, std::min(vertices[1].x, vertices[2].x)));
+    aabb.min.y = std::max(0, std::min(vertices[0].y, std::min(vertices[1].y, vertices[2].y)));
+    aabb.max.x = std::min(_image->get_width() - 1, std::max(vertices[0].x, std::max(vertices[1].x, vertices[2].x)));
+    aabb.max.y = std::min(_image->get_height() - 1, std::max(vertices[0].y, std::max(vertices[1].y, vertices[2].y)));
+    
+    Triangle triangle(vertices);
+    Vec2i point;
+    for (point.x = aabb.min.x; point.x <= aabb.max.x; point.x++)
+    {
+        for (point.y = aabb.min.y; point.y <= aabb.max.y; point.y++)
+        {
+            if (triangle.Contains(point))
+            {
+                _image->set(point.x, point.y, white);
+            }
         }
     }
 }

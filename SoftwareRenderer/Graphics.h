@@ -23,6 +23,7 @@ public:
 
 	void DrawLine(Vec2i a, Vec2i b, TGAColor color);
 	void DrawTriangle(Vec2i a, Vec2i b, Vec2i c);
+    void DrawTriangle(Vec2i* vetices);
     void End();
 };
 
