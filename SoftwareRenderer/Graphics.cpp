@@ -2,7 +2,7 @@
 
 Graphics::Graphics()
 {
-    _image = new TGAImage(300, 300, TGAImage::RGB);
+    _image = new TGAImage(IMAGE_WIDTH, IMAGE_HEIGHT, TGAImage::RGB);
 }
 Graphics::~Graphics()
 {
@@ -106,7 +106,7 @@ void Graphics::DrawTriangle(Vec2i a, Vec2i b, Vec2i c)
     }
 }
 
-void Graphics::DrawTriangle(Vec2i* vertices)
+void Graphics::DrawTriangle(Vec2i* vertices, TGAColor color)
 {
     // create AABB of the triangle
     AABB aabb;
@@ -123,8 +123,50 @@ void Graphics::DrawTriangle(Vec2i* vertices)
         {
             if (triangle.Contains(point))
             {
-                _image->set(point.x, point.y, white);
+                _image->set(point.x, point.y, color);
             }
+        }
+    }
+}
+
+void Graphics::DrawModel(Model* model)
+{
+    // wireframe render
+//    for (int i = 0; i < model->nfaces(); i++)
+//    {
+//        std::vector<int> face = model->face(i);
+//        for (int j = 0; j < 3; j++)
+//        {
+//            Vec3f v0 = model->vert(face[j]);
+//            Vec3f v1 = model->vert(face[(j + 1) % 3]);
+//            int x0 = (v0.x + 1.0) * IMAGE_WIDTH / 2.0;
+//            int y0 = (v0.y + 1.0) * IMAGE_HEIGHT / 2.0;
+//            int x1 = (v1.x + 1.0) * IMAGE_WIDTH / 2.0;
+//            int y1 = (v1.y + 1.0) * IMAGE_HEIGHT / 2.0;
+//            Vec2i x(x0, y0);
+//            Vec2i y(x1, y1);
+//            DrawLine(x, y, white);
+//        }
+//    }
+
+    // flat shading render
+    for (int i = 0; i < model->nfaces(); i++)
+    {
+        std::vector<int> face = model->face(i);
+        Vec2i screen_coords[3];
+        Vec3f world_coords[3];
+        for (int j = 0; j < 3; j++)
+        {
+            Vec3f worldPosition = model->vert(face[j]);
+            screen_coords[j] = Vec2i((worldPosition.x + 1) * IMAGE_WIDTH / 2, (worldPosition.y + 1) * IMAGE_HEIGHT / 2);
+            world_coords[j] = worldPosition;
+        }
+        Vec3f lightDir = Vec3f(0, 0, -1);
+        Vec3f normal = (world_coords[2] - world_coords[0]).Cross(world_coords[1] - world_coords[0]).normalize();
+        float intensity = lightDir * normal;
+        if (intensity > 0)
+        {
+            DrawTriangle(screen_coords, TGAColor(intensity * 255, intensity * 255, intensity * 255, 255));
         }
     }
 }
