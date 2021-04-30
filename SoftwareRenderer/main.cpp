@@ -1,8 +1,8 @@
-﻿#include <vector>
+#include <vector>
 #include <cmath>
-#include "tgaimage.h"
 #include "model.h"
-#include "Geometry.h"
+#include "tgaimage.h"
+#include "Graphics.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
@@ -145,33 +145,40 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color)
 	}
 }
 
-int main(int argc, char** argv)
-{
-	DrawModel();
-	return 0;
-}
-
 void DrawModel()
 {
-	model = new Model("obj/african_head.obj");
-	TGAImage image(width, height, TGAImage::RGB);
-	for (int i = 0; i < model->nfaces(); i++)
-	{
-		std::vector<int> face = model->face(i);
-		for (int j = 0; j < 3; j++)
-		{
-			Vec3f v0 = model->vert(face[j]);
-			Vec3f v1 = model->vert(face[(j + 1) % 3]);
-			int x0 = (v0.x + 1.)*width / 2.;
-			int y0 = (v0.y + 1.)*height / 2.;
-			int x1 = (v1.x + 1.)*width / 2.;
-			int y1 = (v1.y + 1.)*height / 2.;
-			line(x0, y0, x1, y1, image, white);
-		}
-	}
+    model = new Model("obj/african_head.obj");
+    TGAImage image(width, height, TGAImage::RGB);
+    for (int i = 0; i < model->nfaces(); i++)
+    {
+        std::vector<int> face = model->face(i);
+        for (int j = 0; j < 3; j++)
+        {
+            Vec3f v0 = model->vert(face[j]);
+            Vec3f v1 = model->vert(face[(j + 1) % 3]);
+            int x0 = (v0.x + 1.)*width / 2.;
+            int y0 = (v0.y + 1.)*height / 2.;
+            int x1 = (v1.x + 1.)*width / 2.;
+            int y1 = (v1.y + 1.)*height / 2.;
+            line(x0, y0, x1, y1, image, white);
+        }
+    }
 
-	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-	image.write_tga_file("output.tga");
-	delete model;
+    image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
+    image.write_tga_file("output.tga");
+    delete model;
+}
+
+int main(int argc, char** argv)
+{
+    Graphics graphics;
+    Vec2i a[3] = {Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80)};
+    Vec2i b[3] = {Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180)};
+    Vec2i c[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
+    graphics.DrawTriangle(a[0], a[1], a[2]);
+    graphics.DrawTriangle(b[0], b[1], b[2]);
+    graphics.DrawTriangle(c[0], c[1], c[2]);
+    graphics.End();
+	return 0;
 }
 
