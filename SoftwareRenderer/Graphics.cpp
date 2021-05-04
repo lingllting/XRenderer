@@ -1,4 +1,5 @@
 #include "Graphics.h"
+#include "Geometry.h"
 
 Graphics::Graphics()
 {
@@ -106,24 +107,42 @@ void Graphics::DrawTriangle(Vec2i a, Vec2i b, Vec2i c)
     }
 }
 
-void Graphics::DrawTriangle(Vec2i* vertices, TGAColor color)
+// Rasterize triangle based on AABB.
+void Graphics::DrawTriangle(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, float* zBuffer, TGAImage* texture, Vec3f light)
 {
     // create AABB of the triangle
     AABB aabb;
-    aabb.min.x = std::max(0, std::min(vertices[0].x, std::min(vertices[1].x, vertices[2].x)));
-    aabb.min.y = std::max(0, std::min(vertices[0].y, std::min(vertices[1].y, vertices[2].y)));
-    aabb.max.x = std::min(_image->get_width() - 1, std::max(vertices[0].x, std::max(vertices[1].x, vertices[2].x)));
-    aabb.max.y = std::min(_image->get_height() - 1, std::max(vertices[0].y, std::max(vertices[1].y, vertices[2].y)));
+    aabb.min.x = std::max(0.0f, std::min(vertices[0].x, std::min(vertices[1].x, vertices[2].x)));
+    aabb.min.y = std::max(0.0f, std::min(vertices[0].y, std::min(vertices[1].y, vertices[2].y)));
+    aabb.max.x = std::min((float)(_image->get_width() - 1), std::max(vertices[0].x, std::max(vertices[1].x, vertices[2].x)));
+    aabb.max.y = std::min((float)(_image->get_height() - 1), std::max(vertices[0].y, std::max(vertices[1].y, vertices[2].y)));
     
     Triangle triangle(vertices);
-    Vec2i point;
+    Vec3f point;
     for (point.x = aabb.min.x; point.x <= aabb.max.x; point.x++)
     {
         for (point.y = aabb.min.y; point.y <= aabb.max.y; point.y++)
         {
-            if (triangle.Contains(point))
+			Vec3f p = triangle.BaryCentric(point);
+            if (p.x >= 0 && p.y >= 0 && p.z >= 0)
             {
-                _image->set(point.x, point.y, color);
+				point.z = vertices[0].z * p.x + vertices[1].z * p.y + vertices[2].z * p.z;
+				
+				if (zBuffer[int(point.x + point.y * IMAGE_WIDTH)] < point.z)
+				{
+					zBuffer[int(point.x + point.y * IMAGE_WIDTH)] = point.z;
+					// sample texture
+					Vec3f uv = uvs[0] * p.x + uvs[1] * p.y + uvs[2] * p.z;
+					Vec3f norm = normals[0] * p.x + normals[1] * p.y + normals[2] * p.z;
+
+					float intensity = light * norm;
+					TGAColor color = texture->get(uv.x * texture->get_width(),  (1 - uv.y) * texture->get_height());
+					if (intensity > 0)
+					{
+						color = TGAColor(color.r * intensity, color.g * intensity, color.b * intensity, color.a);
+					}
+					_image->set(point.x, point.y, color); 
+				}
             }
         }
     }
@@ -149,26 +168,43 @@ void Graphics::DrawModel(Model* model)
 //        }
 //    }
 
+	// Initialize z buffer
+	float *zBuffer = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
+	for (int i = IMAGE_WIDTH * IMAGE_HEIGHT; i--; zBuffer[i] = -std::numeric_limits<float>::max());
+
+	// Load texture
+	TGAImage* texture = new TGAImage();
+	texture->read_tga_file("obj/african_head_diffuse.tga");
+
     // flat shading render
     for (int i = 0; i < model->nfaces(); i++)
     {
-        std::vector<int> face = model->face(i);
-        Vec2i screen_coords[3];
+        std::vector<Vec3f> face = model->face(i);
+        Vec3f screen_coords[3];
         Vec3f world_coords[3];
+		Vec3f uvs[3];
+		Vec3f norms[3];
         for (int j = 0; j < 3; j++)
         {
-            Vec3f worldPosition = model->vert(face[j]);
-            screen_coords[j] = Vec2i((worldPosition.x + 1) * IMAGE_WIDTH / 2, (worldPosition.y + 1) * IMAGE_HEIGHT / 2);
+            Vec3f worldPosition = model->vert(face[0][j]);
+			Vec3f uv = model->uv(face[1][j]);
+			Vec3f norm = model->uv(face[2][j]);
+			screen_coords[j] = WorldToScreenPoint(worldPosition);
             world_coords[j] = worldPosition;
+			uvs[j] = uv;
+			norms[j] = norm;
         }
-        Vec3f lightDir = Vec3f(0, 0, -1);
-        Vec3f normal = (world_coords[2] - world_coords[0]).Cross(world_coords[1] - world_coords[0]).normalize();
-        float intensity = lightDir * normal;
-        if (intensity > 0)
-        {
-            DrawTriangle(screen_coords, TGAColor(intensity * 255, intensity * 255, intensity * 255, 255));
-        }
+
+        Vec3f lightDir = Vec3f(0, 0, -1); 
+		Vec3f normal = (world_coords[2] - world_coords[0]).Cross(world_coords[1] - world_coords[0]).normalize();
+		for (int j = 0; j < 3; j++)
+		{
+			norms[j] = normal;
+		}
+		DrawTriangle(screen_coords, uvs, norms, zBuffer, texture, lightDir);
     }
+
+	delete texture;
 }
 
 void Graphics::End()
