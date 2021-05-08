@@ -21,12 +21,19 @@ Model::Model(const char *filename) : verts_(), faces_() {
             for (int i=0;i<3;i++) iss >> v.raw[i];
             verts_.push_back(v);
         }
-		if (!line.compare(0, 3, "vt "))
+		else if (!line.compare(0, 3, "vt "))
 		{
 			iss >> trash >> trash;
 			Vec3f v;
 			for (int i = 0; i < 3; i++) iss >> v.raw[i];
 			uvs_.push_back(v);
+		}
+		else if (!line.compare(0, 3, "vn "))
+		{
+			iss >> trash >> trash;
+			Vec3f v;
+			for (int i = 0; i < 3; i++) iss >> v.raw[i];
+			norms_.push_back(v);
 		}
 		else if (!line.compare(0, 2, "f "))
 		{
@@ -73,7 +80,7 @@ Vec3f Model::uv(int i) {
 }
 
 Vec3f Model::norm(int i) {
-	return norms_[i];
+	return norms_[i].normalize();
 }
 
 

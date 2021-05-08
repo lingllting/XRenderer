@@ -22,8 +22,10 @@ int main(int argc, char** argv)
     // graphics.DrawTriangle(b, white);
     // graphics.DrawTriangle(c, white);
     
+	Vec3f lightDir = Vec3f(1, -1, 1).normalize();
+	Vec3f eye = Vec3f(1, 1, 3);
     Model *model = new Model("obj/african_head.obj");
-    graphics.DrawModel(model);
+	graphics.DrawModel(model, eye, lightDir);
     graphics.End();
     
     delete model;
