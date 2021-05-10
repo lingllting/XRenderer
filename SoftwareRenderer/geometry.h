@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <vector>
 
+template <class T> struct Vec3;
 template <class T> struct Vec2 
 {
 	union 
@@ -16,6 +17,11 @@ template <class T> struct Vec2
 	};
 	Vec2() : u(0), v(0) {}
 	Vec2(T _u, T _v) : u(_u),v(_v) {}
+	Vec2(Vec3<T> vec3)
+	{
+		x = vec3.x;
+		y = vec3.y;
+	}
 	inline Vec2<T> operator +(const Vec2<T> &V) const { return Vec2<T>(u+V.u, v+V.v); }
 	inline Vec2<T> operator -(const Vec2<T> &V) const { return Vec2<T>(u-V.u, v-V.v); }
 	inline Vec2<T> operator *(float f)          const { return Vec2<T>(u*f, v*f); }
@@ -119,8 +125,8 @@ public:
 		Vec3f s[2];
 		for (int i = 0; i < 2; i++) 
 		{
-			s[i][0] = _b[i] - _a[i];
-			s[i][1] = _c[i] - _a[i];
+			s[i][0] = _c[i] - _a[i];
+			s[i][1] = _b[i] - _a[i];
 			s[i][2] = _a[i] - point[i];
 		}
 		Vec3f u = s[0].Cross(s[1]);
@@ -145,8 +151,16 @@ public:
 	static Matrix identity(int dimensions);
 	std::vector<float>& operator[](const int i);
 	Matrix operator*(const Matrix& a);
+	Matrix operator*(const Vec3f& a);
 	Matrix transpose();
 	Matrix inverse();
+
+	void SetCol(int col, Vec2f vec)
+	{
+		assert(nrows() == 2);
+		m[0][col] = vec.x;
+		m[1][col] = vec.y;
+	}
 
 	friend std::ostream& operator<<(std::ostream& s, Matrix& m);
 };

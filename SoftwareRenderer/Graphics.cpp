@@ -1,6 +1,61 @@
 #include "Graphics.h"
 #include "Geometry.h"
 
+
+IShader::~IShader() {}
+
+Matrix ModelView;
+Matrix Viewport;
+Matrix Projection;
+
+Vec3f m2v(Matrix m)
+{
+	return Vec3f(m[0][0] / m[3][0], m[1][0] / m[3][0], m[2][0] / m[3][0]);
+}
+
+Matrix v2m(Vec3f v)
+{
+	Matrix m(4, 1);
+	m[0][0] = v.x;
+	m[1][0] = v.y;
+	m[2][0] = v.z;
+	m[3][0] = 1.f;
+	return m;
+}
+
+void viewport(int x, int y, int w, int h)
+{
+	Viewport = Matrix::identity(4);
+	Viewport[0][3] = x + w / 2.f;
+	Viewport[1][3] = y + h / 2.f;
+	Viewport[2][3] = 255 / 2.f;
+
+	Viewport[0][0] = w / 2.f;
+	Viewport[1][1] = h / 2.f;
+	Viewport[2][2] = 255 / 2.f;
+}
+
+void lookat(Vec3f eye, Vec3f center, Vec3f up)
+{
+	Vec3f z = (eye - center).normalize();
+	Vec3f x = (up^z).normalize();
+	Vec3f y = (z^x).normalize();
+	ModelView = Matrix::identity(4);
+	for (int i = 0; i < 3; i++)
+	{
+		ModelView[0][i] = x[i];
+		ModelView[1][i] = y[i];
+		ModelView[2][i] = z[i];
+		ModelView[i][3] = -center[i];
+	}
+}
+
+void projection(float coeff)
+{
+	Projection = Matrix::identity(4);
+	Projection[3][2] = coeff;
+}
+
 Graphics::Graphics()
 {
     _image = new TGAImage(IMAGE_WIDTH, IMAGE_HEIGHT, TGAImage::RGB);
@@ -114,7 +169,7 @@ void Graphics::DrawTriangleSweepingLine(Vec3f* vertices, Vec3f* uvs, Vec3f* norm
 }
 
 // Rasterize triangle based on AABB.
-void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, float* zBuffer, TGAImage* texture, Vec3f light, float intensity)
+void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, float* zBuffer, Model* model, Vec3f light, float intensity, IShader& shader)
 {
 	vertices[0] = Vec3i(vertices[0]);
 	vertices[1] = Vec3i(vertices[1]);
@@ -125,20 +180,6 @@ void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, flo
     aabb.min.y = std::max(0.0f, std::min(vertices[0].y, std::min(vertices[1].y, vertices[2].y)));
     aabb.max.x = std::min((float)(_image->get_width() - 1), std::max(vertices[0].x, std::max(vertices[1].x, vertices[2].x)));
     aabb.max.y = std::min((float)(_image->get_height() - 1), std::max(vertices[0].y, std::max(vertices[1].y, vertices[2].y)));
-
-	Vec3f t0 = vertices[0];
-	Vec3f t1 = vertices[1];
-	Vec3f t2 = vertices[2];
-	Vec2i uv0 = Vec2i(uvs[0].x * texture->get_width(), uvs[0].y * texture->get_height());
-	Vec2i uv1 = Vec2i(uvs[1].x * texture->get_width(), uvs[1].y * texture->get_height());
-	Vec2i uv2 = Vec2i(uvs[2].x * texture->get_width(), uvs[2].y * texture->get_height());
-	float intensity0 = normals[0] * light;
-	float intensity1 = normals[1] * light;
-	float intensity2 = normals[2] * light;
-	// sort the vertices bottom-to-top in ascending order by their y-coordinate.
-	if (t0.y > t1.y) { std::swap(t0, t1); std::swap(uv0, uv1); std::swap(intensity0, intensity1);};
-	if (t0.y > t2.y) { std::swap(t0, t2); std::swap(uv0, uv2); std::swap(intensity0, intensity2);};
-	if (t1.y > t2.y) { std::swap(t1, t2); std::swap(uv1, uv2); std::swap(intensity1, intensity2);};
     
     Triangle triangle(vertices);
     Vec3f point;
@@ -148,29 +189,51 @@ void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, flo
         {
 			Vec3f p = triangle.BaryCentric(point);
             if (p.x >= 0 && p.y >= 0 && p.z >= 0)
-			// if (triangle.Contains(point))
             {
+
 				// barycentric interpolation
 				point.z = vertices[0].z * p.x + vertices[1].z * p.y + vertices[2].z * p.z;
 				
 				if (zBuffer[int(point.x + point.y * IMAGE_WIDTH)] < point.z)
 				{
 					zBuffer[int(point.x + point.y * IMAGE_WIDTH)] = point.z;
-					// sample texture
-					Vec3f uv = uvs[0] * p.x + uvs[1] * p.z + uvs[2] * p.y;
-					Vec3f norm = normals[0] * p.x + normals[1] * p.z + normals[2] * p.y;
 
-					float intensity = light * norm;
-					TGAColor color = texture->get(uv.x * texture->get_width(),  uv.y * texture->get_height());
+
+					TGAColor color;
+					bool discard = shader.fragment(p, color);
+					if (!discard)
+					{
+						_image->set(point.x, point.y, color);
+					}
+
+					// sample texture
+// 					Vec3f uv = uvs[0] * p.x + uvs[1] * p.y + uvs[2] * p.z;
+// 					Vec3f norm = normals[0] * p.x + normals[1] * p.y + normals[2] * p.z;
+// 
+// 					float intensity = light * norm;
+// 					TGAColor color = model->diffuse((Vec2f)uv);
 // 					if (intensity > 0)
 // 					{
 // 						color = TGAColor(color.r * intensity, color.g * intensity, color.b * intensity, color.a);
 // 					}
-					color = color * intensity;
-					_image->set(point.x, point.y, color);
+// 					color = color * intensity;
+// 					_image->set(point.x, point.y, color);
 				}
 
 				// bilinear interpolation
+// 				Vec3f t0 = vertices[0];
+// 				Vec3f t1 = vertices[1];
+// 				Vec3f t2 = vertices[2];
+// 				Vec2i uv0 = Vec2i(uvs[0].x * model->GetDiffuseMap().get_width(), uvs[0].y * model->GetDiffuseMap().get_height());
+// 				Vec2i uv1 = Vec2i(uvs[1].x * model->GetDiffuseMap().get_width(), uvs[1].y * model->GetDiffuseMap().get_height());
+// 				Vec2i uv2 = Vec2i(uvs[2].x * model->GetDiffuseMap().get_width(), uvs[2].y * model->GetDiffuseMap().get_height());
+// 				float intensity0 = normals[0] * light;
+// 				float intensity1 = normals[1] * light;
+// 				float intensity2 = normals[2] * light;
+// 				// sort the vertices bottom-to-top in ascending order by their y-coordinate.
+// 				if (t0.y > t1.y) { std::swap(t0, t1); std::swap(uv0, uv1); std::swap(intensity0, intensity1); };
+// 				if (t0.y > t2.y) { std::swap(t0, t2); std::swap(uv0, uv2); std::swap(intensity0, intensity2); };
+// 				if (t1.y > t2.y) { std::swap(t1, t2); std::swap(uv1, uv2); std::swap(intensity1, intensity2); };
 // 				int height = point.y - t0.y;
 // 				int total_height = t2.y - t0.y;
 // 				bool second_half = height > t1.y - t0.y || t1.y == t0.y;
@@ -202,7 +265,7 @@ void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, flo
     }
 }
 
-void Graphics::DrawModel(Model* model, Vec3f eye, Vec3f lightDir)
+void Graphics::DrawModel(Model* model, Vec3f eye, Vec3f lightDir, IShader& shader)
 {
     // wireframe render
 //    for (int i = 0; i < model->nfaces(); i++)
@@ -226,15 +289,6 @@ void Graphics::DrawModel(Model* model, Vec3f eye, Vec3f lightDir)
 	float *zBuffer = new float[IMAGE_WIDTH * IMAGE_HEIGHT];
 	for (int i = IMAGE_WIDTH * IMAGE_HEIGHT; i--; zBuffer[i] = -std::numeric_limits<float>::max());
 
-	// Load texture
-	TGAImage* texture = new TGAImage();
-	texture->read_tga_file("obj/african_head_diffuse.tga");
-	texture->flip_vertically();
-
-	Matrix projection = Matrix::identity(4);
-	projection[3][2] = -1.0f / 3.0f;
-
-	Matrix viewPort = viewport(IMAGE_WIDTH / 8, IMAGE_HEIGHT / 8, IMAGE_WIDTH * 3 / 4, IMAGE_HEIGHT * 3 / 4);
     // flat shading render
     for (int i = 0; i < model->nfaces(); i++)
     {
@@ -245,11 +299,11 @@ void Graphics::DrawModel(Model* model, Vec3f eye, Vec3f lightDir)
 		Vec3f norms[3];
         for (int j = 0; j < 3; j++)
         {
-            Vec3f worldPosition = model->vert(face[0][j]);
-			Vec3f uv = model->uv(face[1][j]);
-			Vec3f norm = model->norm(face[2][j]);
+            Vec3f worldPosition = model->vert(i, j);
+			Vec3f uv = model->uv(i, j);
+			Vec3f norm = model->norm(i, j);
 			// screen_coords[j] = WorldToScreenPoint(worldPosition);
-			screen_coords[j] = m2v(viewPort * projection  * lookat(eye, Vec3f(0, 0, 0), Vec3f(0, 1, 0)) * v2m(worldPosition));
+			screen_coords[j] = shader.vertex(i, j);
             world_coords[j] = worldPosition;
 			uvs[j] = uv;
 			norms[j] = norm;
@@ -260,11 +314,9 @@ void Graphics::DrawModel(Model* model, Vec3f eye, Vec3f lightDir)
 		bool isBackface = eye * normal <= 0;
 		if (isBackface > 0)
 		{
-			DrawTriangleAABB(screen_coords, uvs, norms, zBuffer, texture, lightDir, intensity);
+			DrawTriangleAABB(screen_coords, uvs, norms, zBuffer, model, lightDir, intensity, shader);
 		}
     }
-
-	delete texture;
 }
 
 void Graphics::End()

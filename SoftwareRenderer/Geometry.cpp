@@ -50,6 +50,17 @@ Matrix Matrix::operator*(const Matrix& a)
 	return result;
 }
 
+Matrix Matrix::operator*(const Vec3f& a)
+{
+	// [2, 3] X [3, 1]
+	assert(cols == 3);
+	
+	Matrix result(2, 1);
+	result.m[0][0] = m[0][0] * a.x + m[0][1] * a.y + m[0][2] * a.y;
+	result.m[1][0] = m[1][0] * a.x + m[1][1] * a.y + m[1][2] * a.y;
+	return result;
+}
+
 Matrix Matrix::transpose() 
 {
 	Matrix result(cols, rows);
