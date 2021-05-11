@@ -31,6 +31,7 @@ template <class T> struct Vec2
 
 };
 
+struct Matrix;
 template <class T> struct Vec3
 {
 	union
@@ -47,6 +48,7 @@ template <class T> struct Vec3
         y = vec2.y;
         z = 0;
     }
+    Vec3(Matrix& matrix);
 	inline Vec3<T> operator ^(const Vec3<T> &v) const { return Vec3<T>(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x); }
 	inline Vec3<T> operator +(const Vec3<T> &v) const { return Vec3<T>(x+v.x, y+v.y, z+v.z); }
 	inline Vec3<T> operator -(const Vec3<T> &v) const { return Vec3<T>(x-v.x, y-v.y, z-v.z); }
@@ -164,5 +166,7 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& s, Matrix& m);
 };
+
+template <> Vec3<float>::Vec3(Matrix& m);
 
 #endif //__GEOMETRY_H__

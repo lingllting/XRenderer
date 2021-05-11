@@ -2,6 +2,7 @@
 #define __IMAGE_H__
 
 #include <fstream>
+#include "Geometry.h"
 
 #pragma pack(push,1)
 struct TGA_Header
@@ -58,6 +59,11 @@ struct TGAColor
 			raw[i] = p[i];
 		}
 	}
+    
+    operator Vec3f()
+    {
+        return Vec3f(r / 255.0, g /255.0, b / 255.0);
+    }
 
 	TGAColor operator *(float intensity) const 
 	{

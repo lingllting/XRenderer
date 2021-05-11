@@ -26,6 +26,8 @@ public:
 	std::vector<Vec3f> face(int idx);
 
 	TGAColor diffuse(Vec2f uvf);
+    Vec3f normal(Vec2f uv);
+    
 	void load_texture(std::string filename, const char *suffix, TGAImage &img);
 	TGAImage& GetDiffuseMap() { return diffusemap_; }
 };
