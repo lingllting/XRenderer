@@ -59,6 +59,7 @@ Model::Model(const char *filename) : verts_(), faces_()
 
 	load_texture(filename, "_diffuse.tga", diffusemap_);
     load_texture(filename, "_nm.tga", normalmap_);
+    load_texture(filename, "_spec.tga", specularmap_);
 }
 
 Model::~Model() {
@@ -101,6 +102,11 @@ Vec3f Model::normal(Vec2f uvf)
 {
     Vec2i uv(uvf[0] * normalmap_.get_width(), uvf[1] * normalmap_.get_height());
     return normalmap_.get(uv[0], uv[1]);
+}
+
+float Model::specular(Vec2f uvf)
+{
+    return specularmap_.get(uvf[0] * specularmap_.get_width(), uvf[1] * specularmap_.get_height()).raw[0];
 }
 
 void Model::load_texture(std::string filename, const char *suffix, TGAImage &img) 
