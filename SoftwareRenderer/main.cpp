@@ -139,8 +139,16 @@ int main(int argc, char** argv)
     // graphics.DrawTriangle(c, white);
     
     model = new Model("obj/african_head.obj");
+    
+    clock_t start,ends;
+    start = clock();
+    std::cout << "Start Drawing." << std::endl;
+    
 	graphics.DrawModel(model, eye, lightDir, shader);
     graphics.End();
+    
+    ends = clock();
+    std::cout << "End Drawing." << (ends - start) / (float)CLOCKS_PER_SEC << std::endl;
     
     delete model;
 	return 0;
