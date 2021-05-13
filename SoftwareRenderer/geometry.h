@@ -52,6 +52,7 @@ template <class T> struct Vec3
 	inline Vec3<T> operator ^(const Vec3<T> &v) const { return Vec3<T>(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x); }
 	inline Vec3<T> operator +(const Vec3<T> &v) const { return Vec3<T>(x+v.x, y+v.y, z+v.z); }
 	inline Vec3<T> operator -(const Vec3<T> &v) const { return Vec3<T>(x-v.x, y-v.y, z-v.z); }
+	inline Vec3<T> operator -(const float& f) const { return Vec3<T>(x - f, y - f, z - f); }
 	inline Vec3<T> operator *(float f)          const { return Vec3<T>(x*f, y*f, z*f); }
 	inline T       operator *(const Vec3<T> &v) const { return x*v.x + y*v.y + z*v.z; }
     inline Vec3<T> Cross(const Vec3<T> &v)      const { return Vec3<T>(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x); }
@@ -61,6 +62,17 @@ template <class T> struct Vec3
 	Vec3<T>& normalize(T l=1) { *this = (*this)*(l/norm()); return *this; }
 	template <class > friend std::ostream& operator<<(std::ostream& s, Vec3<T>& v);
 	template <class u> Vec3<T>(const Vec3<u> &v);
+
+	operator std::vector<float>()
+	{
+		std::vector<float> vec;
+		vec.push_back(x);
+		vec.push_back(y);
+		vec.push_back(z);
+		return vec;
+	}
+
+
 };
 
 typedef Vec2<float> Vec2f;
@@ -154,14 +166,40 @@ public:
 	std::vector<float>& operator[](const int i);
 	Matrix operator*(const Matrix& a);
 	Matrix operator*(const Vec3f& a);
+	Matrix operator/(float f);
 	Matrix transpose();
 	Matrix inverse();
+
+	Vec3f col(const size_t idx) const
+	{
+		assert(idx < cols);
+		Vec3f ret;
+		for (size_t i = rows; i--; ret[i] = m[i][idx]);
+		return ret;
+	}
+
+	operator Vec2f()
+	{
+		return Vec2f(m[0][0], m[1][0]);
+	}
+	operator Vec3f()
+	{
+		return Vec3f(m[0][0], m[1][0], m[2][0]);
+	}
 
 	void SetCol(int col, Vec2f vec)
 	{
 		assert(nrows() == 2);
 		m[0][col] = vec.x;
 		m[1][col] = vec.y;
+	}
+
+	void SetCol3(int col, Vec3f vec)
+	{
+		assert(nrows() == 3);
+		m[0][col] = vec.x;
+		m[1][col] = vec.y;
+		m[2][col] = vec.z;
 	}
 
 	friend std::ostream& operator<<(std::ostream& s, Matrix& m);

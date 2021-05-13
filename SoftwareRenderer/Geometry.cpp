@@ -56,9 +56,21 @@ Matrix Matrix::operator*(const Vec3f& a)
 	// [2, 3] X [3, 1]
 	assert(cols == 3);
 	
-	Matrix result(2, 1);
-	result.m[0][0] = m[0][0] * a.x + m[0][1] * a.y + m[0][2] * a.z;
-	result.m[1][0] = m[1][0] * a.x + m[1][1] * a.y + m[1][2] * a.z;
+	Matrix result(rows, 1);
+	for (size_t i = rows; i--; result.m[i][0] = m[i][0] * a.x + m[i][1] * a.y + m[i][2] * a.z);
+	return result;
+}
+
+Matrix Matrix::operator/(float f)
+{
+	Matrix result(rows, cols);
+	for (int i = 0; i < rows; i++)
+	{
+		for (int j = 0; j < cols; j++)
+		{
+			result.m[i][j] = m[i][j] / f;
+		}
+	}
 	return result;
 }
 
