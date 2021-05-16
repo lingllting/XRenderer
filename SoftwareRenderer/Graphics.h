@@ -47,7 +47,9 @@ public:
 	void DrawTriangleSweepingLine(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, float* zBuffer, TGAImage* texture, Vec3f light, float intensity);
     void DrawTriangleAABB(Vec3f* vetices, Vec3f* uvs, Vec3f* normals, float* zBuffer, Model* texture, Vec3f light, float intensity, IShader& shader);
     void DrawModel(Model* model, Vec3f eye, Vec3f lightDir, IShader& shader);
-    void End();
+    void End(const char* output);
+
+	void Clear();
 
 	inline Vec3f WorldToScreenPoint(Vec3f point)
 	{

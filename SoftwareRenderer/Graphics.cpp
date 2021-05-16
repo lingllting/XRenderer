@@ -319,8 +319,14 @@ void Graphics::DrawModel(Model* model, Vec3f eye, Vec3f lightDir, IShader& shade
     }
 }
 
-void Graphics::End()
+void Graphics::End(const char* output)
 {
     _image->flip_vertically();
-    _image->write_tga_file("output.tga");
+    _image->write_tga_file(output);
+	_image->clear();
+}
+
+void Graphics::Clear()
+{
+	_image->clear();
 }
