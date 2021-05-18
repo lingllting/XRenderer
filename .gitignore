@@ -38,4 +38,5 @@ SoftwareRenderer/SoftwareRenderer.vcxproj
 SoftwareRenderer/SoftwareRenderer.vcxproj.filters
 SoftwareRenderer/SoftwareRenderer.vcxproj.user
 XRenderer/SoftwareRenderer/Build/*
+TinyRenderer/*
 output.tga

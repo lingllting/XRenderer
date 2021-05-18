@@ -7,10 +7,10 @@
 
 Model *model = NULL;
 Vec3f lightDir = Vec3f(1, 1, 1).normalize();
-Vec3f eye = Vec3f(1, 1, 3);
+Vec3f eye = Vec3f(1, 1, 4);
 Vec3f center(0, 0, 0);
 Vec3f up(0, 1, 0);
-float depth = 255;
+float depth = 100;
 TGAImage shadowBuffer;
 Graphics graphics;
 
@@ -80,7 +80,7 @@ struct Shader : public IShader
 		Vec3f normal = uniform_MVP_IT * v2m(model->normal(uv));
 
         varying_uv.SetCol(nthvert, uv);
-		varying_normal.SetCol3(nthvert, normal);
+		varying_normal.SetCol3(nthvert, normal); 
 		varying_tri.SetCol3(nthvert, gl_Vertex / gl_Vertex.m[3][0]);
         				  
         return m2v(gl_Vertex);
@@ -120,18 +120,18 @@ struct Shader : public IShader
 		Vec3f reflect = (normal * (normal * light * 2.f) - light).normalize();
 		// float specular = pow(std::max(reflect * eye.normalize(), 0.0f), model->specular(uv));
 		float gloss = model->specular(uv);
-		float specular = pow(std::max(reflect.z, 0.0f), gloss);
+		float specular = pow(std::max(reflect.z, 0.0f), 5 + gloss);
 		float ambient = 5.;
 		color = model->diffuse(uv);
 
 		Matrix shadow = uniform_CAM2LIGHT * v2m(varying_tri * bar);
 		Vec3f shadowUV = shadow / shadow[3][0];
-		float shadowDepth = shadowBuffer.get(shadowUV.x * graphics.IMAGE_WIDTH, shadowUV.y * graphics.IMAGE_HEIGHT).r / 255.;
+		float shadowDepth = shadowBuffer.get((int)shadowUV.x, (int)shadowUV.y).r / 255. * depth;
 		float shadowColor = 0.3 + 0.7 * (shadowDepth < shadowUV.z);
 
-		color.r = std::min<float>((ambient + color.r  * (diffuse )), 255);
-		color.g = std::min<float>((ambient + color.g  * (diffuse )), 255);
-		color.b = std::min<float>((ambient + color.b  * (diffuse )), 255);
+		color.r = std::min<float>((ambient + color.r  * shadowColor * (diffuse + specular )), 255);
+		color.g = std::min<float>((ambient + color.g  * shadowColor * (diffuse + specular)), 255);
+		color.b = std::min<float>((ambient + color.b  * shadowColor * (diffuse + specular)), 255);
 		return false;
     }
 };
@@ -144,92 +144,66 @@ struct PhongShader : public IShader
     
     virtual Vec3f vertex(int iface, int nthvert)
     {
+		Vec3f rawPosition = model->vert(iface, nthvert);
         Matrix gl_Vertex = v2m(model->vert(iface, nthvert));
         gl_Vertex = Viewport * Projection * ModelView * gl_Vertex;
         
         Vec2f uv = model->uv(iface, nthvert);
         varying_uv.SetCol(nthvert, uv);
         
-        return m2v(gl_Vertex);
+        return gl_Vertex;
     }
 
     virtual bool fragment(Vec3f bar, TGAColor& color)
     {
 		Vec2f uv = varying_uv * bar;
 		Vec3f light = uniform_MVP * v2m(lightDir);
-		Vec3f normal = uniform_MVP_IT * v2m(model->normal(uv));
+		Vec3f normal = m2v(uniform_MVP_IT * v2m(model->normal(uv)));
+		Vec3f rawNormal = model->normal(uv);
 		light = light.normalize();
 		normal = normal.normalize();
         float diffuse = std::max(0.f, normal * light);
-        Vec3f reflect = (normal * ( normal * light * 2.f) - light).normalize();
+        Vec3f reflect = (normal * ( normal * light) * 2.f - light).normalize();
         // float specular = pow(std::max(reflect * eye.normalize(), 0.0f), model->specular(uv));
-        float specular = pow(std::max(reflect.z, 0.0f), model->specular(uv));
-        float ambient = 5.;
+        float specular = pow(std::max(reflect.z, 0.0f), 5 + model->specular(uv));
+        float ambient = 10;
         color = model->diffuse(uv);
         
-        color.r = std::min<float>((ambient + color.r * (diffuse + specular)), 255);
-        color.g = std::min<float>((ambient + color.g * (diffuse + specular)), 255);
-        color.b = std::min<float>((ambient + color.b * (diffuse + specular)), 255);
+        color.r = std::min<float>((color.r * (diffuse + specular)), 255);
+        color.g = std::min<float>((color.g * (diffuse + specular)), 255);
+        color.b = std::min<float>((color.b * (diffuse + specular)), 255);
         return false;
     }
 };
 
 int main(int argc, char** argv)
 {
-	Vec3f camera = eye;
-	camera = lightDir;
-	lookat(camera, center, up);
+	model = new Model("obj/diablo3_pose.obj");
+
+	lookat(lightDir, center, up);
 	viewport(graphics.IMAGE_WIDTH / 8, graphics.IMAGE_HEIGHT / 8, graphics.IMAGE_WIDTH * 3 / 4, graphics.IMAGE_HEIGHT * 3 / 4);
-	projection(-1.f / (camera - center).norm());
+	projection(0);
 
 	Matrix model2Light = Viewport * Projection * ModelView;
-
 	DepthShader depthShader;
-    // shader.uniform_MVP = Projection * ModelView;
-    // shader.uniform_MVP_IT = (Projection * ModelView).inverse().transpose();
+    
+	graphics.DrawModel(model, lightDir, lightDir, depthShader);
+	graphics.End("depth.tga");
 
-    // Vec2i a[3] = {Vec2i(10, 70),   Vec2i(50, 160),  Vec2i(70, 80)};
-	// Vec2i b[3] = {Vec2i(180, 50),  Vec2i(150, 1),   Vec2i(70, 180)};
-	// Vec2i c[3] = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
-    
-    
-    // line sweeping
-    // graphics.DrawTriangle(a[0], a[1], a[2]);
-    // graphics.DrawTriangle(b[0], b[1], b[2]);
-    // graphics.DrawTriangle(c[0], c[1], c[2]);
-    
-    //AABB
-    // graphics.DrawTriangle(a, white);
-    // graphics.DrawTriangle(b, white);
-    // graphics.DrawTriangle(c, white);
-    
-    model = new Model("obj/diablo3_pose.obj");
-    
-    clock_t start,ends;
-    start = clock();
-    std::cout << "Start Drawing." << std::endl;
-    
-// 	graphics.DrawModel(model, eye, lightDir, depthShader);
-//     graphics.End("depth.tga");
-// 
-// 	shadowBuffer.read_tga_file("depth.tga");
-// 	shadowBuffer.flip_horizontally();
+	shadowBuffer.read_tga_file("depth.tga");
+	shadowBuffer.flip_vertically();
 
-	camera = eye;
-	lookat(camera, center, up);
+	lookat(eye, center, up);
 	viewport(graphics.IMAGE_WIDTH / 8, graphics.IMAGE_HEIGHT / 8, graphics.IMAGE_WIDTH * 3 / 4, graphics.IMAGE_HEIGHT * 3 / 4);
-	projection(-1.f / (camera - center).norm());
+	projection(0);
 
 	Matrix model2Camera_Inverse = (Viewport * Projection * ModelView).inverse();
-	Shader shader = Shader();
+	Shader shader = Shader(); 	
 	shader.uniform_CAM2LIGHT = model2Light * model2Camera_Inverse;
 	shader.uniform_MVP = Projection * ModelView;
 	shader.uniform_MVP_IT = (Projection * ModelView).inverse().transpose();
 	graphics.DrawModel(model, eye, lightDir, shader);
 	graphics.End("output.tga");
-    
-    ends = clock();
-    std::cout << "End Drawing." << (ends - start) / (float)CLOCKS_PER_SEC << std::endl;
     
     delete model;
 	return 0;

@@ -101,7 +101,11 @@ TGAColor Model::diffuse(Vec2f uvf)
 Vec3f Model::normal(Vec2f uvf)
 {
     Vec2i uv(uvf[0] * normalmap_.get_width(), uvf[1] * normalmap_.get_height());
-    return normalmap_.get(uv[0], uv[1]);
+	TGAColor c = normalmap_.get(uv[0], uv[1]);
+	Vec3f res;
+	for (int i = 0; i < 3; i++)
+		res[2 - i] = (float)c.raw[i] / 255.f * 2.f - 1.f;
+	return res;
 }
 
 float Model::specular(Vec2f uvf)

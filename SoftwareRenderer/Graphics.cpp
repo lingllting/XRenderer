@@ -8,6 +8,7 @@ Matrix ModelView;
 Matrix Viewport;
 Matrix Projection;
 
+extern float depth;
 Vec3f m2v(Matrix m)
 {
 	return Vec3f(m[0][0] / m[3][0], m[1][0] / m[3][0], m[2][0] / m[3][0]);
@@ -28,11 +29,11 @@ void viewport(int x, int y, int w, int h)
 	Viewport = Matrix::identity(4);
 	Viewport[0][3] = x + w / 2.f;
 	Viewport[1][3] = y + h / 2.f;
-	Viewport[2][3] = 255 / 2.f;
+	Viewport[2][3] = depth / 2.f;
 
 	Viewport[0][0] = w / 2.f;
 	Viewport[1][1] = h / 2.f;
-	Viewport[2][2] = 255 / 2.f;
+	Viewport[2][2] = depth / 2.f;
 }
 
 void lookat(Vec3f eye, Vec3f center, Vec3f up)
@@ -171,6 +172,15 @@ void Graphics::DrawTriangleSweepingLine(Vec3f* vertices, Vec3f* uvs, Vec3f* norm
 // Rasterize triangle based on AABB.
 void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, float* zBuffer, Model* model, Vec3f light, float intensity, IShader& shader)
 {
+// 	for (int j = 0; j < 3; j++)
+// 	{
+// 		Vec3f v0 = vertices[j];
+// 		Vec3f v1 = vertices[(j + 1) % 3];
+// 		Vec2i A((int)v0.x, (int)v0.y);
+// 		Vec2i B((int)v1.x, (int)v1.y);
+// 		DrawLine(A, B, white);
+// 	}
+
 	vertices[0] = Vec3i(vertices[0]);
 	vertices[1] = Vec3i(vertices[1]);
 	vertices[2] = Vec3i(vertices[2]);
@@ -260,7 +270,7 @@ void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, flo
 // 					_image->set(P.x, P.y, color);
 // 					// _image->set(P.x, P.y, white * norm);
 // 				}
-             }
+            }
         }
     }
 }
@@ -270,11 +280,11 @@ void Graphics::DrawModel(Model* model, Vec3f eye, Vec3f lightDir, IShader& shade
     // wireframe render
 //    for (int i = 0; i < model->nfaces(); i++)
 //    {
-//        std::vector<int> face = model->face(i);
+//        std::vector<Vec3f> face = model->face(i);
 //        for (int j = 0; j < 3; j++)
 //        {
-//            Vec3f v0 = model->vert(face[j]);
-//            Vec3f v1 = model->vert(face[(j + 1) % 3]);
+//            Vec3f v0 = model->vert(i, j);
+//            Vec3f v1 = model->vert(i, (j + 1) % 3);
 //            int x0 = (v0.x + 1.0) * IMAGE_WIDTH / 2.0;
 //            int y0 = (v0.y + 1.0) * IMAGE_HEIGHT / 2.0;
 //            int x1 = (v1.x + 1.0) * IMAGE_WIDTH / 2.0;

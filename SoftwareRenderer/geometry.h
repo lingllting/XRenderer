@@ -48,7 +48,7 @@ template <class T> struct Vec3
         y = vec2.y;
         z = 0;
     }
-    Vec3(Matrix& matrix);
+    // Vec3(Matrix& matrix);
 	inline Vec3<T> operator ^(const Vec3<T> &v) const { return Vec3<T>(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x); }
 	inline Vec3<T> operator +(const Vec3<T> &v) const { return Vec3<T>(x+v.x, y+v.y, z+v.z); }
 	inline Vec3<T> operator -(const Vec3<T> &v) const { return Vec3<T>(x-v.x, y-v.y, z-v.z); }
@@ -134,8 +134,6 @@ public:
 
 	inline Vec3f BaryCentric(Vec3f point)
 	{
-		_a.z = _b.z = _c.z = point.z = 0;
-
 		Vec3f s[2];
 		for (int i = 0; i < 2; i++) 
 		{
@@ -205,6 +203,6 @@ public:
 	friend std::ostream& operator<<(std::ostream& s, Matrix& m);
 };
 
-template <> Vec3<float>::Vec3(Matrix& m);
+//template <> Vec3<float>::Vec3(Matrix& m);
 
 #endif //__GEOMETRY_H__
