@@ -6,5 +6,14 @@
  [GLEW](http://glew.sourceforge.net/)
 
 
- Features implemented:
- [Bresenham's line algorithm](https://zh.wikipedia.org/wiki/%E5%B8%83%E9%9B%B7%E6%A3%AE%E6%BC%A2%E5%A7%86%E7%9B%B4%E7%B7%9A%E6%BC%94%E7%AE%97%E6%B3%95)
+ Features implemented:  
+ [Bresenham's line algorithm](https://zh.wikipedia.org/wiki/%E5%B8%83%E9%9B%B7%E6%A3%AE%E6%BC%A2%E5%A7%86%E7%9B%B4%E7%B7%9A%E6%BC%94%E7%AE%97%E6%B3%95)  
+ WireFrame rendering.   
+ Rasterization based on AABB and sweeping line.  
+ [Gouraud shading.](https://en.wikipedia.org/wiki/Gouraud_shading)  
+ [Phong shading.](https://en.wikipedia.org/wiki/Phong_shading)  
+ Back-face culling.  
+ Z-Buffer rendering.  
+ Tangent space normal mapping.  
+ Shadow mapping.
+ 
