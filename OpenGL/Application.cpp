@@ -1,50 +1,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-
+#include "Shader.h"
 #include <iostream>
-
-
-static unsigned int CompileShader(unsigned int type, const std::string& source)
-{
-	unsigned int id = glCreateShader(type);
-	const char* src = source.c_str();
-	glShaderSource(id, 1, &src, nullptr);
-	glCompileShader(id);
-
-	int result;
-	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-	if (result == GL_FALSE)
-	{
-		int length;
-		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-		char* message = (char*)alloca(length * sizeof(char));
-		glGetShaderInfoLog(id, length, &length, message);
-		std::cout << "Failed to compile" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << std::endl;
-		std::cout << message << std::endl;
-
-		glDeleteShader(id);
-		return 0;
-	}
-
-	return id;
-}
-
-static unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader)
-{
-	unsigned int program = glCreateProgram();
-	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
-	unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
-
-	glAttachShader(program, vs);
-	glAttachShader(program, fs);
-	glLinkProgram(program);
-	glValidateProgram(program);
-
-	glDeleteShader(vs);
-	glDeleteShader(fs);
-
-	return program;
-}
 
 int main(void)
 {
@@ -73,59 +30,67 @@ int main(void)
 
 	std::cout << glGetString(GL_VERSION) << std::endl;
 
-	float positions[6] =
+	float vertices[] = 
 	{
-		-0.5f, -0.5f,
-		0.0f, 0.5f,
-		0.5f, -0.5f
+		 0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // top right
+		-0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f, // bottom left
+		 0.0f, 0.5f, 0.0f,   0.0f, 0.0f, 1.0f  // top 
+	};
+	unsigned int indices[] = 
+	{  
+		// note that we start from 0!
+		0, 1, 2,   // first triangle
 	};
 
-	unsigned int buffer;
-	glCreateBuffers(1, &buffer);
-	glBindBuffer(GL_ARRAY_BUFFER, buffer);
-	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW);
+	unsigned int VAO;
+	glCreateVertexArrays(1, &VAO);
+	// bind Vertex Array Object
+	glBindVertexArray(VAO);
+	
+	unsigned int VBO;
+	glCreateBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
 
-	std::string vertexShader =
-		"#version 330 core\n"
-		"\n"
-		"layout(location = 0) int vec4 position;\n"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"	gl_Position = position;\n"
-		"}\n";
+	unsigned int EBO;
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-	std::string fragmentShader =
-		"#version 330 core\n"
-		"\n"
-		"layout(location = 0) out vec4 color;\n"
-		"\n"
-		"void main()\n"
-		"{\n"
-		"	color = vec4(1.0, 0.0, 0.0, 1.0);\n"
-		"}\n";
+	Shader shader("Shaders/Shader.vs.txt", "Shaders/Shader.fs.txt");
 
-	unsigned int shader = CreateShader(vertexShader, fragmentShader);
-	glUseProgram(shader);
-
+	// glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{ 
 		/* Render here */ 
 		glClear(GL_COLOR_BUFFER_BIT);
+		// glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		glBindVertexArray(VAO);
+		shader.use();
+
+// 		float timeValue = glfwGetTime();
+// 		float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+// 		int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+// 		glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
+		glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
-
 		/* Poll for and process events */
 		glfwPollEvents(); 
 	}
 
-	glDeleteShader(shader);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
+	glDeleteVertexArrays(1, &VAO);
+/*	glDeleteProgram(shaderProgram);*/
 
 	glfwTerminate();
 	return 0;

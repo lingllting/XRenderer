@@ -179,7 +179,8 @@ void Graphics::DrawTriangleAABB(Vec3f* vertices, Vec3f* uvs, Vec3f* normals, flo
 // 		Vec2i A((int)v0.x, (int)v0.y);
 // 		Vec2i B((int)v1.x, (int)v1.y);
 // 		DrawLine(A, B, white);
-// 	}
+// 	}
+
 
 	vertices[0] = Vec3i(vertices[0]);
 	vertices[1] = Vec3i(vertices[1]);
